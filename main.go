@@ -10,9 +10,7 @@ import (
 const BUFFERSIZE = 1522
 
 func main() {
-	ifce, err := water.NewTAP("")
-	tapstd := make([]byte, BUFFERSIZE)
-	stdtap := make([]byte, BUFFERSIZE)
+	ifce, err := water.NewTUN("")
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -23,27 +21,6 @@ func main() {
 
 	defer ifce.Close()
 
-	go func() {
-		n, err := os.Stdin.Read(stdtap)
-		if err != nil && n == 0 {
-			ifce.Close()
-			if err == io.EOF {
-				os.Exit(0)
-			} else {
-				os.Exit(1)
-			}
-
-		}
-
-		ifce.Write(stdtap)
-	}()
-
-	for {
-		n, err := ifce.Read(tapstd)
-		if err != nil && n == 0 {
-			return
-		}
-
-		os.Stdout.Write(tapstd)
-	}
+	go io.Copy(ifce, os.Stdin)
+	io.Copy(os.Stdout, ifce)
 }
